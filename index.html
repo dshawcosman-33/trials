@@ -427,7 +427,7 @@ I(2,"I2-02",["forest","rock"],"Roamer Sighting","A huge simulated predator pads 
 I(2,"I2-03",["forest"],"Thorn Wall","A thicket of barbs blocks the path.",["st","M",""],["F+1"],["N+1"]);
 I(2,"I2-04",["forest","water","rock","marsh"],"Rising Water","The creek swells with runoff from Mistmarsh.",["sa","M",""],["move"],["lose-item"]);
 I(2,"I2-05",["any"],"Ambush at the Bend","A rival leaps from cover.",["sp","H",""],["rival-1"],["N+2"],{cf:["recall"],amb:1});
-I(2,"I2-06",["any"],"Trade Offer","Orla waves a canteen and a map scrap.",["wi","M",""],["trade","ins:beacon"],[],{need:()=>!S.gone.includes("Orla")});
+I(2,"I2-06",["any"],"Trade Offer","Orla waves a canteen and a map scrap.",["wi","M",""],["trade","ins:beacon"],[],{need:()=>!S.gone.includes("Orla")&&!S.allies.includes("Orla")});
 I(2,"I2-07",["any"],"Overseer Riddle","A drone floats down with a small glowing panel.",["wi","M",""],["item"],["N+1"]);
 I(2,"I2-08",["any"],"Ally Leaves","Your ally is gone before dawn, along with something of yours. You could track them.",["pe","E",""],["allyreveal"],["lose-item","allyleave"],{need:hasAlly});
 I(2,"I2-09",["water"],"Dry Creekbed","A stream has stopped running.",["pe","H","waterwise"],["W+1"],[]);
@@ -492,16 +492,19 @@ function logW(t){if(S)S.log.push({k:"w",t});}
 /* --- narr_00_tutorial.js --- */
 /* ============ TUTORIAL (How to Play) ============ */
 function mockBonus(st,k){return effStat(st)+((k&&P&&REG[P.reg].sk.includes(KS[k]||k))?3:0);}
-function spinInto(box,need,bonus,cb){
+function spinInto(box,need,bonus,cb,forced){
   box.innerHTML="";
-  const roll=d20(),tot=roll+bonus,res=roll===20?"crit":roll===1?"fumble":tot>=need?"pass":"fail";
+  const roll=forced||d20(),tot=roll+bonus,res=roll===20?"crit":roll===1?"fumble":tot>=need?"pass":"fail";
   const wb=el("div","dice wheelbox"),calc=el("div","calc","<i>Spinning... (click the wheel to skip)</i>");
   const W=makeWheel(roll);wb.append(W.el,calc);box.append(wb);
-  W.spin(()=>{calc.innerHTML=resultExplain(roll,bonus,tot,need,res);if(cb)cb({roll,tot,res});});
+  W.spin(()=>{sfx(res);calc.innerHTML=resultExplain(roll,bonus,tot,need,res)+(res==="crit"?"<div class='notes'>In a real run you would also gain Audience Favour.</div>":"");if(cb)cb({roll,tot,res});});
 }
-function tutFree(c,need,bonus,label){
-  const box=el("div"),b=btn("Spin the wheel!",()=>{b.textContent="Spinning...";b.disabled=true;spinInto(box,need,bonus,()=>{b.disabled=false;b.textContent="Spin again (just for practice)";});});
-  const ex=el("div","ex",`<b>${label}</b><br>Need <b>${need}</b>. You add <b>${sg(bonus)}</b>.`);
+function tutFree(c,need,bonus,label,rig){
+  let n=0;
+  const box=el("div"),b=btn("Spin the wheel!",()=>{b.textContent="Spinning...";b.disabled=true;
+    let f=null;if(rig&&n<rig.length){f=typeof rig[n]==="function"?rig[n]():rig[n];}n++;
+    spinInto(box,need,bonus,()=>{b.disabled=false;b.textContent="Spin again (just for practice)";},f);});
+  const ex=el("div","ex",`<b>${label}</b><br>Need <b>${need}</b>. Your stats add <b>${sg(bonus)}</b>.`);
   const wrap=el("div","act");wrap.append(b);
   c.append(ex,wrap,box);
 }
@@ -584,8 +587,8 @@ const TUT=[
   c.innerHTML=`<h3>Checks: the Need number and the wheel</h3>
   <p>When a choice is risky, you <b>spin the wheel</b>. The wheel has 20 slices, numbered 1 to 20. The numbers are mixed into a new order every spin.</p>
   <p>Every choice shows a <b>Need</b> number. That is the <b>total</b> you must reach. Here is how it works:</p>
-  <div class="ex"><b>1.</b> Spin the wheel to get a number.<br><b>2.</b> Add your bonuses (the tag says "you add +3", for example).<br><b>3.</b> If your total is <b>equal to or higher than Need</b>, you succeed.</div>
-  <p><b>Example:</b> the tag says <b>Need 11 (you add +3)</b>. You spin a 9. Then 9 + 3 = 12. Twelve is at least 11, so you succeed!</p>
+  <div class="ex"><b>1.</b> Spin the wheel to get a number.<br><b>2.</b> Add your bonuses (the tag says "your stats add +3", for example).<br><b>3.</b> If your total is <b>equal to or higher than Need</b>, you succeed.</div>
+  <p><b>Example:</b> the tag says <b>Need 11 (your stats add +3)</b>. You spin a 9. Then 9 + 3 = 12. Twelve is at least 11, so you succeed!</p>
   <p>The difficulty names match these Need numbers: <b>Easy 8, Medium 11, Hard 14, Very Hard 17.</b></p>
   <h3 style="margin-top:12px">Practice spin</h3>`;
   tutFree(c,10,wi,"Practice: a Wits check");},
@@ -596,8 +599,10 @@ const TUT=[
    <li>The <b style="color:#8f1414">red 1</b> is a <b>critical failure</b>. It <b>always fails</b>, and on some choices it is worse than a normal miss.</li>
   </ul>
   <p>Audience Favour can be spent to <b>spin again</b> after a failed check.</p>
-  <div class="ex">Try it: this check says <b>Need 30</b>, which is impossible by math alone. Only a gold 20 can win. Spin a few times and watch what happens!</div>`;
-  tutFree(c,30,0,"Practice: an impossible check");},
+  <div class="ex">Try it: this check says <b>Need 30</b>, which is impossible by math alone. Only a gold 20 can win. Your <b>first spin is random</b>, but your <b>second spin is set to land on the gold 20</b> so you can see what happens.</div>`;
+  tutFree(c,30,0,"Practice: an impossible check",[()=>2+Math.floor(Math.random()*18),20]);
+  c.append(el("div","ex","Now the other side. This check is easy: <b>Need 5</b>, and your stats add <b>+4</b>. Normally you would almost always pass. This spin is set to land on the <b>red 1</b>."));
+  tutFree(c,5,4,"Practice: an easy check",[1]);},
  c=>{c.innerHTML=`<h3>Bonuses: do the math</h3>
   <p>Your total bonus is made of pieces added together:</p>
   <ul>
@@ -607,10 +612,10 @@ const TUT=[
    <li><b>+2</b> if an <b>ally</b> is good at it.</li>
    <li><b>+2</b> if you are <b>Rested</b> (it is used up on your next roll).</li>
   </ul>
-  <p>You never have to add these yourself. The button shows the total as <b>(you add +X)</b>. But try a few to see how it works.</p>`;
+  <p>You never have to add these yourself. The button shows the total as <b>(your stats add +X)</b>. But try a few to see how it works.</p>`;
   tutQuiz(c,"Your Perception is 4. You have the Foraging skill (+3) and a Forager's Card (+2). You make a foraging check. What do you add in total?",["+5","+9","+7"],1,"4 + 3 + 2 = 9.");
-  tutQuiz(c,"The tag says Need 14 and you add +4. You spin a 9. Do you succeed?",["Yes, it is close enough","No, 9 + 4 = 13, which is less than 14"],1,"13 is less than 14, so it is a miss.");
-  tutQuiz(c,"The tag says Need 8 and you add +5. You spin a 3. Do you succeed?",["Yes, 3 + 5 = 8, and equal counts","No, 3 is too low"],0,"Equal to Need counts as a success.");},
+  tutQuiz(c,"The tag says Need 14 and your stats add +4. You spin a 9. Do you succeed?",["Yes, it is close enough","No, 9 + 4 = 13, which is less than 14"],1,"13 is less than 14, so it is a miss.");
+  tutQuiz(c,"The tag says Need 8 and your stats add +5. You spin a 3. Do you succeed?",["Yes, 3 + 5 = 8, and equal counts","No, 3 is too low"],0,"Equal to Need counts as a success.");},
  c=>{c.innerHTML=`<h3>Your backpack</h3>
   <ul>
    <li>Your pack holds <b>3 items</b>. Gear gives bonuses. For example, a <b>Climbing Rope</b> helps with climbing and a <b>Water Filter</b> makes any water safe.</li>
@@ -1932,6 +1937,35 @@ function doCheck(spec,cb){
   dbg(`CHECK ${spec.label||""} ${spec.st}/${spec.k||"-"} need${dc} spin${roll}+${bonus}=${tot} -> ${res}`);
   showDice(spec,b,roll,tot,dc,res,note,cb);
 }
+
+/* ---- sound effects (WebAudio, no files) ---- */
+let sndOn=true;try{sndOn=localStorage.getItem("trialsSnd")!=="0";}catch(e){}
+let AUDIOCTX=null;
+function ac(){if(FAST()||!sndOn)return null;try{if(!AUDIOCTX){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AUDIOCTX=new C();}if(AUDIOCTX.state==="suspended")AUDIOCTX.resume();return AUDIOCTX;}catch(e){return null;}}
+function tone(f,t0,dur,type,vol,f2){const a=ac();if(!a)return;try{const o=a.createOscillator(),g=a.createGain(),T=a.currentTime+t0;o.type=type;o.frequency.setValueAtTime(f,T);if(f2)o.frequency.exponentialRampToValueAtTime(f2,T+dur);g.gain.setValueAtTime(0.0001,T);g.gain.exponentialRampToValueAtTime(vol,T+0.008);g.gain.exponentialRampToValueAtTime(0.0001,T+dur);o.connect(g);g.connect(a.destination);o.start(T);o.stop(T+dur+0.05);}catch(e){}}
+function tick(){tone(1150+Math.random()*120,0,0.035,"square",0.04);}
+function bell(f,t0,len,v){tone(f,t0,len,"sine",v);tone(f*2,t0,len*0.7,"sine",v*0.45);tone(f*3,t0,len*0.4,"sine",v*0.2);}
+function sfx(res){
+  if(!ac())return;
+  if(res==="pass")bell(880,0,0.9,0.16);
+  else if(res==="crit"){[784,988,1175,1568].forEach((f,i)=>bell(f,i*0.11,i===3?1.2:0.5,0.14));}
+  else if(res==="fail")tone(190,0,0.3,"triangle",0.28,80);
+  else if(res==="fumble"){tone(230,0,0.28,"triangle",0.28,90);tone(150,0.22,0.55,"sawtooth",0.14,50);}
+}
+function tickLoop(rot,done){
+  if(!ac())return;
+  let prev=null,cum=0,idx=0,lastT=0;
+  const f=()=>{
+    if(done())return;
+    const m=/matrix\(([^)]+)\)/.exec(getComputedStyle(rot).transform||"");
+    if(m){const p=m[1].split(",").map(Number),ang=Math.atan2(p[1],p[0])*180/Math.PI;
+      if(prev!==null){let d=ang-prev;if(d<-180)d+=360;if(d>180)d-=360;cum+=d;}
+      prev=ang;const n=Math.floor(cum/18);
+      if(n>idx){idx=n;const now=performance.now();if(now-lastT>26){lastT=now;tick();}}}
+    requestAnimationFrame(f);
+  };
+  requestAnimationFrame(f);
+}
 function wheelHTML(order){
   let s='<svg viewBox="0 0 230 230" role="img" aria-label="Spinner wheel with the numbers 1 to 20"><g class="rot" style="transform-origin:115px 115px">';
   const cx=115,cy=115,R=108;
@@ -1961,7 +1995,7 @@ function makeWheel(roll){
     void rot.getBoundingClientRect();
     rot.style.transition="transform 4.8s cubic-bezier(.12,.55,.08,1)";
     rot.style.transform=`rotate(${target}deg)`;
-    rot.addEventListener("transitionend",end);
+    rot.addEventListener("transitionend",end);tickLoop(rot,()=>ended);
     setTimeout(end,5200);
     wrap.style.cursor="pointer";wrap.title="Click the wheel to skip the spin";
     wrap.onclick=()=>{land();end();};
@@ -1981,7 +2015,7 @@ function showDice(spec,b,roll,tot,dc,res,note,cb){
   calc.innerHTML=`<div><b>Need ${dc}</b> to succeed${esc(note)}.</div><div class="small mut" style="margin:4px 0">${list}<br>Your bonuses add up to <b>${sg(bonus)}</b>.</div><div><i>Spinning... (click the wheel to skip)</i></div>`;
   if(box.scrollIntoView){try{box.scrollIntoView({block:"nearest"});}catch(e){}}
   const finish=()=>{
-    calc.innerHTML=resultExplain(roll,bonus,tot,dc,res)+`<div class="small mut" style="margin-top:4px">${list}</div>`;
+    sfx(res);calc.innerHTML=resultExplain(roll,bonus,tot,dc,res)+`<div class="small mut" style="margin-top:4px">${list}</div>`;
     const row=el("div","row");row.style.marginTop="8px";
     if(res==="fail"||res==="fumble"){
       if(S.fav>0)row.append(btn("Spend Audience Favour: reroll",()=>{S.fav--;dbg("Favour reroll");doCheck(spec,cb);},"coral small"));
@@ -2314,7 +2348,7 @@ function maybeInter(){
   if(S.roamers&&S.day===2&&!S.roamDone&&(S.loc==="PIN"||S.loc==="RID")){S.roamDone=true;return showInter(INTER[2].find(x=>x.id==="I2-02"));}
   const cr=forced?0:rnd();const cp=S.day===1?.25:.34;
   if(forced||cr<cp){
-    const pool=CONF.filter(c=>c.d===S.day&&!S.usedInter.includes(c.id)&&inTerr(c.terr)&&(!c.need||c.need())&&(c.opp==="rivals"||!S.gone.includes(c.opp)));
+    const pool=CONF.filter(c=>c.d===S.day&&!S.usedInter.includes(c.id)&&inTerr(c.terr)&&(!c.need||c.need())&&(c.opp==="rivals"||(!S.gone.includes(c.opp)&&!S.allies.includes(c.opp))));
     if(pool.length||forced){
       const c=pool.length?Object.assign({},pick(pool)):{id:"CX",opp:"rivals",th:12+S.day,n:"Cornered",s:"Your noise draws a group of rivals. They close in.",d:S.day};
       S.usedInter.push(c.id);return startConflict(c);
@@ -2735,13 +2769,13 @@ function showMenu(){
   c.append(btn("Load this code",()=>{try{const o=JSON.parse(decodeURIComponent(escape(atob(load.value.trim()))));if(o&&o.reg&&o.base){P=o;saveP();closeModal();title();}}catch(e){load.value="That code did not work.";}},"small"));
   c.insertBefore(load,c.lastChild);
   const r=el("div","row");r.style.marginTop="8px";
-  r.append(btn("Large text",()=>document.body.classList.toggle("large"),"small grey"),btn("High contrast",()=>document.body.classList.toggle("contrast"),"small grey"));
+  r.append(btn("Large text",()=>document.body.classList.toggle("large"),"small grey"),btn("High contrast",()=>document.body.classList.toggle("contrast"),"small grey"),(()=>{const sb=btn(sndOn?"Sound: On":"Sound: Off",()=>{sndOn=!sndOn;try{localStorage.setItem("trialsSnd",sndOn?"1":"0");}catch(e){}sb.textContent=sndOn?"Sound: On":"Sound: Off";if(sndOn){bell(880,0,0.6,0.12);}},"small grey");return sb;})());
   c.append(r);
   c.append(el("hr"),el("p","small","<b>Start over with a new character</b> (this erases your Region, stats and Insights):"));
   c.append(btn("Reset game",()=>{if(confirm("Erase this character and start over?")){try{localStorage.removeItem(KEY);}catch(e){}P=null;S=null;closeModal();createChar();}},"coral small"));
   modal("Menu",c);
 }
-function readAloud(){try{const t=story.innerText;speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t));}catch(e){}}
+function readAloud(){try{const c=story.cloneNode(true);c.querySelectorAll('.wheel,svg').forEach(e=>e.remove());const t=c.textContent.replace(/\s+/g,' ');speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t));}catch(e){}}
 /* ============ teacher build ============ */
 function teacherLogin(){
   const inp=el("input");inp.type="password";inp.placeholder="Password";
