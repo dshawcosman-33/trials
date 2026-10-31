@@ -159,7 +159,7 @@ body.contrast .mini.on{background:#fff;color:#000}
 <body>
 <div id="app">
 <header>
-  <div class="logo">THE TRIALS<small>BETA 0.8</small></div>
+  <div class="logo">THE TRIALS<small>BETA 0.9</small></div>
   <div id="hdrinfo"></div>
   <div id="meters"></div>
   <div class="spacer"></div>
@@ -174,7 +174,7 @@ body.contrast .mini.on{background:#fff;color:#000}
   <section class="panel" id="story"></section>
   <aside class="panel" id="right"></aside>
 </main>
-<footer><a href="#" id="bTeacher">Teacher Build</a><span>The Trials Beta 0.8</span><span id="storeWarn"></span></footer>
+<footer><a href="#" id="bTeacher">Teacher Build</a><span>The Trials Beta 0.9</span><span id="storeWarn"></span></footer>
 </div>
 <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div id="teacher"></div>
@@ -313,7 +313,7 @@ E("D1-DEP-BH","Tunnel Sweep","A patrol of rivals sweeps the supply tunnels at du
 E("D1-PIN-AH","Trapper's Maze","Snares and trip wires fill the trees. This part of the forest was set up as a trap field.",[
  K("Sprint straight through","sp","H","",["move:LAK|RID"],"R"),
  K("Pick through carefully","pe","H","",["item:trap","F+1"],["N+2"]),
- K("Walk around the edge","sa","M","",[],["W-1"])]);
+ K("Walk around the edge","sa","M","",["W-1"],["W-1"])]);
 E("D1-PIN-BH","Stinging Night","A swarm of simulated stinging flies nests right where you meant to camp.",[
  K("Sleep in the cold stream bed","sa","H","",["rested","N-1"],"R"),
  K("Smoke them out",null,"H","woodcraft",["rested","N+1"],["N+2"]),
@@ -1295,7 +1295,7 @@ V("D3-RID-AH",
   "You crouch and watch, but the rivals stay hidden. You learn nothing, and your legs go stiff."]]);
 
 V("D3-RID-BH",
-"Rivals have set an ambush in the narrow pass. It is quiet. Too quiet. There are no birds, no wind and no argument this time. You can feel it in your neck: someone is waiting.\n\nThe pass is the quickest way toward the Beacon, but it could be a trap. You could sneak through, broker a truce with whoever is hiding, or rope down the cliff beside it.",
+"Rivals have set an ambush in the narrow pass. It is quiet. Too quiet. There are no birds and no wind. You can feel it in your neck: someone is waiting.\n\nThe pass is the quickest way toward the Beacon, but it could be a trap. You could sneak through, broker a truce with whoever is hiding, or rope down the cliff beside it.",
 "Rivals have set an ambush in the narrow pass, and it is quiet. Too quiet.",
 [["You press against the rock and slip through, one silent step at a time. You hear a breath, but nobody sees you, and you are through.",
   "A hand reaches out of the rocks and taps your band. It flashes red!"],
@@ -2902,10 +2902,9 @@ function stage3(){
   S.cont=null;const known=S.codeKnown.length>=3;
   const fi=NARR.misc.fin||{};
   scene("Stage 3: The Beacon Panel",fos("fin:s3",fi.s3,fi.s3s));
-  if(known){S.stage.s3=true;logM("Day 3 Finale, Stage 3 (The Beacon Panel): You knew the whole code and entered it.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I entered the code.","I already knew all three symbols from my clues.","The panel accepted the code.");setAct(btn("Enter the code you learned",()=>endFinale()));return;}
   let guesses=3+S.extraGuess;let cur=[];
   const hint=S.codeKnown.map(i=>`Symbol ${i+1} is ${SYM[S.code[i]]}.`).join(" ");
-  const area=el("div","");const info=el("div","notes",`You have <b>${guesses}</b> guess${guesses===1?"":"es"}.${hint?" You remember: "+hint:" You do not remember any of the code."}`);
+  const area=el("div","");const info=el("div","notes",`You have <b>${guesses}</b> guess${guesses===1?"":"es"}. Choose the three symbols in the order you learned them. Open <b>Field Notes</b> at the top of the screen to check what you know.${known?"":" You have not learned the whole code, so you may have to guess."}`);
   const slot=el("div","txt","");const msg=el("div","txt","");
   function draw(){slot.innerHTML="Your entry: "+(cur.length?cur.map(c=>SYM[c]).join(" , "):"(empty)");}
   const row=el("div","row");
@@ -2913,8 +2912,8 @@ function stage3(){
   const go=btn("Try this order",()=>{
     if(cur.length<3){msg.textContent="Choose all three symbols first.";return;}
     const ok=cur.filter((c,i)=>c===S.code[i]).length;guesses--;
-    if(ok===3){S.stage.s3=true;logM("Day 3 Finale, Stage 3 (The Beacon Panel): You solved the panel.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I tried different symbol orders.","I worked out the code and solved it.","The panel accepted the code.");endFinale();return;}
-    msg.textContent=`${ok} symbol${ok===1?" is":"s are"} in the right place.`;cur=[];draw();info.innerHTML=`You have <b>${guesses}</b> guess${guesses===1?"":"es"}.${hint?" You remember: "+hint:""}`;
+    if(ok===3){S.stage.s3=true;logM("Day 3 Finale, Stage 3 (The Beacon Panel): You solved the panel.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I tried different symbol orders.",(known?"I entered the three symbols in the order I had learned them.":"I worked out the code and solved it."),"The panel accepted the code.");endFinale();return;}
+    msg.textContent=`${ok} symbol${ok===1?" is":"s are"} in the right place.`;cur=[];draw();info.innerHTML=`You have <b>${guesses}</b> guess${guesses===1?"":"es"}. Check <b>Field Notes</b> for the order.`;
     if(guesses<=0){S.stage.s3=false;logM("Day 3 Finale, Stage 3 (The Beacon Panel): The panel locked.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I tried different symbol orders.","I guessed wrong too many times.","The panel locked and the Beacon stayed dark.");setAct(btn("The panel locks...",()=>endFinale()));}
   },"coral");
   const clear=btn("Clear",()=>{cur=[];draw();},"grey small");
