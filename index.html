@@ -553,7 +553,7 @@ function logM(t){if(S)S.log.push({k:"m",t});}
 function logW(t){if(S)S.log.push({k:"w",t});}
 function logS(t,loc){if(!S)return;if(!S.story)S.story=[];const T=(typeof TOD!=="undefined"&&TOD[S.turn])||["","6:00 am"];
   S.story.push({d:S.day,c:T[1],l:loc!==undefined?loc:(S.loc?LOC[S.loc].n:""),t:String(t).replace(/\s+/g," ").trim()});}
-function storyFx(lines){return(lines||[]).filter(x=>!/Water|Fuel|HP|band flashes|You rest well|next roll|made some noise|stayed quiet|audience|Night falls|already full/i.test(x)).slice(0,2).join(" ");}
+function storyFx(lines){return(lines||[]).filter(x=>!/Water|Fuel|HP|band flashes|You rest well|next roll|made some noise|stayed quiet|audience|Night falls|already full|nothing to lose/i.test(x)).slice(0,2).join(" ");}
 function sentence1(t){t=String(t||"").replace(/\s+/g," ").trim();if(!t)return"";const m=/^(.{20,230}?[.!?])(\s|$)/.exec(t);return m?m[1]:t.slice(0,220);}
 function logE(head,sit,did,res,chg,loc){if(!S)return;if(!S.story)S.story=[];const T=(typeof TOD!=="undefined"&&TOD[S.turn])||["","6:00 am"];
   const cl=x=>String(x||"").replace(/\s+/g," ").trim();
@@ -2912,7 +2912,7 @@ function stage3(){
   const go=btn("Try this order",()=>{
     if(cur.length<3){msg.textContent="Choose all three symbols first.";return;}
     const ok=cur.filter((c,i)=>c===S.code[i]).length;guesses--;
-    if(ok===3){S.stage.s3=true;logM("Day 3 Finale, Stage 3 (The Beacon Panel): You solved the panel.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I tried different symbol orders.",(known?"I entered the three symbols in the order I had learned them.":"I worked out the code and solved it."),"The panel accepted the code.");endFinale();return;}
+    if(ok===3){S.stage.s3=true;logM("Day 3 Finale, Stage 3 (The Beacon Panel): You solved the panel.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.",(known?"I entered the three symbols.":"I tried different symbol orders."),(known?"I entered the three symbols in the order I had learned them.":"I worked out the code and solved it."),"The panel accepted the code.");endFinale();return;}
     msg.textContent=`${ok} symbol${ok===1?" is":"s are"} in the right place.`;cur=[];draw();info.innerHTML=`You have <b>${guesses}</b> guess${guesses===1?"":"es"}. Check <b>Field Notes</b> for the order.`;
     if(guesses<=0){S.stage.s3=false;logM("Day 3 Finale, Stage 3 (The Beacon Panel): The panel locked.");logE("Stage 3: The Beacon Panel","The panel needs three symbols entered in the right order.","I tried different symbol orders.","I guessed wrong too many times.","The panel locked and the Beacon stayed dark.");setAct(btn("The panel locks...",()=>endFinale()));}
   },"coral");
