@@ -159,7 +159,7 @@ body.contrast .mini.on{background:#fff;color:#000}
 <body>
 <div id="app">
 <header>
-  <div class="logo">THE TRIALS<small>BETA 0.9</small></div>
+  <div class="logo">THE TRIALS<small>BETA 0.10</small></div>
   <div id="hdrinfo"></div>
   <div id="meters"></div>
   <div class="spacer"></div>
@@ -174,7 +174,7 @@ body.contrast .mini.on{background:#fff;color:#000}
   <section class="panel" id="story"></section>
   <aside class="panel" id="right"></aside>
 </main>
-<footer><a href="#" id="bTeacher">Teacher Build</a><span>The Trials Beta 0.9</span><span id="storeWarn"></span></footer>
+<footer><a href="#" id="bTeacher">Teacher Build</a><span>The Trials Beta 0.10</span><span id="storeWarn"></span></footer>
 </div>
 <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div id="teacher"></div>
@@ -3045,8 +3045,7 @@ function endButtons(){
     bs.push(r,kr);
   }
   bs.push(btn("Spend Training Points ("+P.tp+")",()=>trainScreen(),P.tp>0?"coral":""));
-  if(S.won)bs.push(btn("Get my story template (copy it into Word or Docs)",()=>showStory(),"coral"));
-  bs.push(btn("Show my run log (for the paper log)",()=>showLog(),"grey"));
+  bs.push(btn("Run log and story template (copy it into Word or Docs)",()=>showStory(),S.won?"coral":"grey"));
   bs.push(btn("Start the next run",()=>title(),"coral"));
   setAct(...bs);
 }
@@ -3185,7 +3184,8 @@ function showLog(){
   modal("Run log (major decisions)",[el("p","small mut","Only the big decisions are listed: events, the Start, fights and the finale. Use the button to add your water and food actions."),ta,row]);
 }
 function storyText(){
-  const a=histLoad();
+  const a=histLoad().slice();
+  if(S&&!S.over&&S.story&&S.story.length)a.push({run:(P?P.runs+1:1),res:"live",lines:S.story});
   let t="MY STORY OF THE TRIALS\n";
   t+=`Contender: ${P?P.name:""}${P?" of "+P.reg:""}\n\n`;
   t+="HOW TO USE THIS TEMPLATE (delete this part when you start writing)\n";
@@ -3197,7 +3197,7 @@ function storyText(){
   t+="6. Some lines copy words from the game, so they may say \"you\". Change those to \"I\" when you write.\n";
   t+="7. Each run is a different attempt. Tell them in order, so we see how your contender learned and changed.\n";
   a.forEach(r=>{
-    t+=`\n==============================\nRUN ${r.run}: ${r.res==="won"?"I lit the Beacon and won the Trials!":"Recalled"+(r.cause?" ("+r.cause+")":"")}\n==============================\n`;
+    t+=`\n==============================\nRUN ${r.run}: ${r.res==="won"?"I lit the Beacon and won the Trials!":r.res==="live"?"In progress (the story so far)":"Recalled"+(r.cause?" ("+r.cause+")":"")}\n==============================\n`;
     let d=0;
     (r.lines||[]).forEach(e=>{if(e.d!==d){d=e.d;t+=`\nDay ${d}\n`;}
       if(e.h){t+=`- ${e.c}${e.l?", "+e.l:""}: ${e.h.toUpperCase()}\n`;if(e.s)t+=`    What was happening: ${e.s}\n`;if(e.a)t+=`    What I did: ${e.a}\n`;if(e.r)t+=`    What happened: ${e.r}\n`;if(e.q)t+=`    What changed: ${e.q}\n`;}
@@ -3206,13 +3206,13 @@ function storyText(){
   return t;
 }
 function showStory(){
-  const a=histLoad();
-  if(!a.length){modal("Story template",[el("p","","Finish at least one run first. Your major decisions are saved as you play, and the template is built from them.")]);return;}
+  const has=histLoad().length||(S&&!S.over&&S.story&&S.story.length);
+  if(!has){modal("Run log",[el("p","","Nothing to show yet. Start playing and your major decisions will be saved here.")]);return;}
   const ta=el("textarea");ta.rows=16;ta.value=storyText();ta.style.width="100%";
   const msg=el("span","small mut","");
   const row=el("div","row");row.style.marginTop="6px";
   row.append(btn("Copy all",()=>{ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard){try{navigator.clipboard.writeText(ta.value);ok=true;}catch(e){}}msg.textContent=ok?"Copied! Paste it into a Word or Google Doc.":"Press Ctrl+C to copy.";},"small"),msg);
-  modal("Your story template",[el("p","small mut","These are all your major decisions and what happened, run by run. Copy them into a document and write your story."),ta,row]);
+  modal("Run log and story template",[el("p","small mut","These are all your major decisions and what happened, run by run, including the run you are playing now. You can open this at any time. Copy it into a document and write your story."),ta,row]);
 }
 function showNotes(){
   let h="";
@@ -3234,7 +3234,7 @@ function showMenu(){
   c.append(btn("Load this code",()=>{try{const o=JSON.parse(decodeURIComponent(escape(atob(load.value.trim()))));if(o&&o.reg&&o.base){P=o;saveP();closeModal();title();}}catch(e){load.value="That code did not work.";}},"small"));
   c.insertBefore(load,c.lastChild);
   const r=el("div","row");r.style.marginTop="8px";
-  r.append(btn("Large text",()=>document.body.classList.toggle("large"),"small grey"),btn("High contrast",()=>document.body.classList.toggle("contrast"),"small grey"),(histLoad().length?btn("Story template",()=>{closeModal();showStory();},"small grey"):document.createTextNode("")),P?btn("Switch portrait",()=>{P.pic=P.pic==="m"?"f":"m";saveP();renderAll();},"small grey"):document.createTextNode(""),(()=>{const sb=btn(sndOn?"Sound: On":"Sound: Off",()=>{sndOn=!sndOn;try{localStorage.setItem("trialsSnd",sndOn?"1":"0");}catch(e){}sb.textContent=sndOn?"Sound: On":"Sound: Off";if(sndOn){bell(880,0,0.6,0.12);}},"small grey");return sb;})());
+  r.append(btn("Large text",()=>document.body.classList.toggle("large"),"small grey"),btn("High contrast",()=>document.body.classList.toggle("contrast"),"small grey"),btn("Run log",()=>{closeModal();showStory();},"small grey"),P?btn("Switch portrait",()=>{P.pic=P.pic==="m"?"f":"m";saveP();renderAll();},"small grey"):document.createTextNode(""),(()=>{const sb=btn(sndOn?"Sound: On":"Sound: Off",()=>{sndOn=!sndOn;try{localStorage.setItem("trialsSnd",sndOn?"1":"0");}catch(e){}sb.textContent=sndOn?"Sound: On":"Sound: Off";if(sndOn){bell(880,0,0.6,0.12);}},"small grey");return sb;})());
   c.append(r);
   c.append(el("hr"),el("p","small","<b>Start over with a new character</b> (this erases your Region, stats and Insights):"));
   c.append(btn("Reset game",()=>{if(confirm("Erase this character and start over?")){try{localStorage.removeItem(KEY);}catch(e){}P=null;S=null;closeModal();createChar();}},"coral small"));
@@ -3301,7 +3301,7 @@ function boot(){
   try{localStorage.setItem("t_","1");localStorage.removeItem("t_");}catch(e){storageOK=false;}
   loadP();
   $("#storeWarn").textContent=storageOK?"":"Saving is blocked here: use Menu > Save code.";
-  $("#bHow").onclick=()=>{if(P)openTutorial(false);};$("#bNotes").onclick=showNotes;$("#bLog").onclick=showLog;$("#bRead").onclick=readAloud;$("#bMenu").onclick=showMenu;
+  $("#bHow").onclick=()=>{if(P)openTutorial(false);};$("#bNotes").onclick=showNotes;$("#bLog").onclick=showStory;$("#bRead").onclick=readAloud;$("#bMenu").onclick=showMenu;
   $("#bTeacher").onclick=e=>{e.preventDefault();if(teacherOn){renderTeacher();return;}teacherLogin();};
   story.addEventListener("pointerdown",crawlStop);
   document.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter")crawlStop();},true);
